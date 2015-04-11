@@ -3,7 +3,7 @@
  * Authors: Felix Ng, John Garcia
  *
  * In this version:
- *  input parsing   -   partial (needs arrow keys .. almost done)
+ *  input parsing   -   done! 
  *  history         -   done!
  *  cd              -   done!
  *  pwd             -   done!
