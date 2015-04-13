@@ -409,85 +409,124 @@ void cdCommand(string arguments)
 
 int otherCommands(string command, string arguments)
 {
-    //call the plumber! Its a me mario!
-    //cat main.cpp > test.txt
-    //cat main.cpp > test.txt | Less
+    string filein, fileout, args = arguments;
+    int left = 0, right = 0;
 
-            /*char *argv[32] = {NULL}; //pointer to size 32 array
-            argv[0] = strdup(command.c_str()); //copy command into first argv list
+    while((arguments.find_first_of("><|") != string::npos)) //as long as there are special symbols
+    {
+        size_t found = arguments.find_first_of("><|");
+        if(arguments[found + 1] == ' ') 
+            arguments.erase(found + 1, 1);
+        if(arguments[found - 1] == ' ') 
+            arguments.erase(found - 1, 1);
+                
+        found = arguments.find_first_of("><|");
+        args = arguments.substr(0, found);
+                
+                
+        /* Left redirect */
+        if(arguments.find("<") != string::npos)
+        {
+            size_t found = arguments.find("<");
+            if(arguments[found + 1] == ' ') 
+                arguments.erase(found + 1, 1);
+            if(arguments[found - 1] == ' ') 
+                arguments.erase(found - 1, 1);
+                    
+                    
+            found = arguments.find("<");
+            size_t foundNext = arguments.find_first_of("><|", found + 1);
+            if(arguments[foundNext + 1] == ' ') 
+                arguments.erase(foundNext + 1, 1);
+            if(arguments[foundNext - 1] == ' ') 
+                arguments.erase(foundNext - 1, 1);
+            foundNext = arguments.find_first_of("><|", found + 1);
+                    
+            fileout = arguments.substr(found + 1, foundNext - 1);       // save filename
+            arguments.erase(0, foundNext); // if no more arguments erase right parameters for running
+            left = 1;
+        }
+                    
+        /* right redirect */
+        if(arguments.find(">") != string::npos)
+        {
+            size_t found = arguments.find(">");
+            if(arguments[found + 1] == ' ') 
+                arguments.erase(found + 1, 1);      // remove extra spaces
+            if(arguments[found - 1] == ' ') 
+                arguments.erase(found - 1, 1);
+                    
+                    
+            found = arguments.find(">");        
+            size_t foundNext = arguments.find_first_of("><|", found + 1);
+            if(arguments[foundNext + 1] == ' ') 
+                arguments.erase(foundNext + 1, 1);
+            if(arguments[foundNext - 1] == ' ') 
+                arguments.erase(foundNext - 1, 1);
+            foundNext = arguments.find_first_of("><|", found + 1);
+            filein = arguments.substr(found + 1, foundNext - 1);                // save filename
+            arguments.erase(0, foundNext); // if no more arguments erase right parameters for running
+            right = 1;
+        }
 
-                if(strcmp(">", argv[i]) == 0)
+        if(arguments.find("|") != string::npos)
+        {
+            size_t found = arguments.find("|");
+            if(arguments[found + 1] == ' ')
+                arguments.erase(found + 1, 1);      // remove extra spaces
+            if(arguments[found - 1] == ' ')
+                arguments.erase(found - 1, 1);
+
+            found = arguments.find("|");        
+            size_t foundNext = arguments.find_first_of("><|", found + 1);
+            if(arguments[foundNext + 1] == ' ')
+                arguments.erase(foundNext + 1, 1);
+            if(arguments[foundNext - 1] == ' ')
+                arguments.erase(foundNext - 1, 1);
+
+            int fd[2], pipeFD = pipe(fd);
+
+            if(pipeFD < 0) //check if broken
+            {
+                perror("broken pipe");
+                exit(EXIT_FAILURE);
+            }
+
+            pipeFD = fork(); //fork it here
+
+            if(pipeFD < 0) //check if broken after fork
+            {
+                perror("broken fork");
+                exit(EXIT_FAILURE);
+            }
+
+            if(pipeFD == 0) //child process
+            {
+                dup2(fd[0], STDIN_FILENO);
+                close(fd[0]);
+                //pipeFD = execvp(cmd1[0], cmd1); //run here
+                if(pipeFD == 0)
                 {
-                    int pid = fork();
-
-                    if(pid == 0)
-                    {
-                        int file = open(argv[i+1], O_RDWR, O_CREAT); //"w"); //open file and then write to
-                        dup2(file, STDIN); //dup2(1, file);
-                        close(file); //close the file when done
-                        execvp(command.data(), argv); //launch the command
-                        exit(0);
-                        return 0;
-                    }
-                }*/
-
-                /*int file//, stdout;
-                file = open("text.txt", O_RDWR, O_CREAT); // open file with fd file
-                //stdout = dup(STDOUT); // save STDOUT to stdout
-    
-                dup2(file, STDOUT); // copy file fd to STDOUT
-    
-                int pid = fork();
-
-                if (pid != 0)
-                    while (wait(NULL) != pid);
-
-                else
-                {
-                    string command = "cat";
-                    string arguments = "test.cpp";
-        
-                    char *argv[32]= {NULL}; //pointer to size 32 array
-                    argv[0] = strdup(command.c_str());
-                    int i = 1;
-
-                    while (!arguments.empty())//parse arguments further into argv
-                    {
-                        if(arguments.find_first_of(' ') != string::npos) //if arguments has space character
-                        {
-                            argv[i] = strdup(arguments.substr(0, arguments.find_first_of(' ')).data());
-                            arguments.erase(0, arguments.find_first_of(' ') + 1);
-                        }
-
-                        else //if no space character
-                        {
-                            argv[i] = strdup(arguments.substr(0, arguments.find_first_of(' ')).data());
-                            arguments.erase(0, arguments.find_first_of(' '));
-                        }
-
-                        i++;
-                    }
-
-                    argv[i] = '\0';
-        
-                    if (execvp(command.data(), argv) < 0)
-                    {
-                        write(1, command.data(), command.length());
-                        write(1, ": command not found\n" , 20);
-                    }
+                    perror("broken execution");
+                    exit(EXIT_FAILURE);
                 }
- 
-                dup2(stdout, STDOUT); //put back to regular stdout
+            }
 
-                else if(arguments.find_first_of('<') != string::npos)
+            if(pipeFD > 0)
+            {
+                while(wait(NULL) != pipeFD);
+                dup2(fd[1], STDOUT_FILENO);
+                close(fd[1]);
+                //pipeFD = execvp(cmd1[0], cmd1);
+                if(pipeFD < 0) 
                 {
-
+                    perror("broken execution");
+                    exit(EXIT_FAILURE);
                 }
-
-                else if(arguments.find_first_of('|') != string::npos)
-                {
-
-                }*/
+            }
+        }
+    }
+        
 
     int pid = fork(); //var for child process
 
@@ -516,7 +555,7 @@ int otherCommands(string command, string arguments)
             i++; //incrementor
         }
                
-        argv[i] = '\0';
+        //argv[i] = '\0';
 
         if(execvp(command.data(), argv) < 0) //command does not match any records here
         {
